@@ -1,5 +1,6 @@
 var express = require("express");
 var router = express.Router();
+const { serverBlogIsValid } = require("../utils/validation");
 
 // const { Db } = require('mongodb');
 const { blogsDB } = require("../mongo");
@@ -41,21 +42,13 @@ router.post("/blog-submit", async function (req, res, next) {
   try {
     console.log("testing before blogPost creation");
     const collection = await blogsDB().collection("blogs50");
-
     const sortedBlogArray = await collection.find({}).sort({ id: 1 }).toArray();
-
     const lastBlog = sortedBlogArray[sortedBlogArray.length - 1];
-    console.log("req body", req.body);
-
     const title = req.body.title;
-    console.log("title", title);
-
     const text = req.body.text;
-    console.log("text", req.body.text);
-
     const author = req.body.author;
     const category = req.body.category;
-
+    const date = new Date();
     const blogPost = {
       title: title,
       text: text,

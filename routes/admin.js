@@ -1,66 +1,54 @@
 var express = require("express");
 var router = express.Router();
+
 const { blogsDB } = require("../mongo");
+const { serverBlogIsValid } = require("../utils/validation");
 
-router.get("/blog-list", async function (req, res, next) {
+router.get("/admin/blog-list", async (req, res, next) => {
   try {
-    const collection = await blogsDB().collection("posts");
-    const posts = await collection
+    const collection = await blogsDB().collection("posts50");
+    const blogs = await collection
       .find({})
-      .project({
-        text: 0,
-        category: 0,
-        _id: 0,
-      })
+      .projection({ id: 1, title: 1, author: 1, createdAt: 1, lastModified: 1 })
       .toArray();
-    res.json(posts);
-  } catch (e) {
-    res.status(500).send("Error fetching blog list.");
-  }
+  } catch (error) {}
 });
 
-router.put("/edit-blog", async function (req, res, next) {
+router.put("/admin/edit-blog", async (req, res) => {
   try {
-    const title = req.body.title;
-    const author = req.body.author;
-    const text = req.body.text;
-    const id = req.body.id;
-
-    const collection = await blogsDB().collection("posts");
-    const updatedPost = {
-      title,
-      text,
-      author,
-      lastModified: new Date().toISOString(),
-    };
+    const updateBlogIsValid = serverBlogIsValid(req.body);
+    if (!updateBlogIsValid) {
+      res
+        .status(400)
+        .json({ message: "Blog update is not valid", success: false });
+      return;
+    }
+    const newPostData = req.body;
+    const date = new Date();
+    const updateBlog = { ...newPostData, lastModified: date };
     await collection.updateOne(
-      {
-        id: blogId,
-      },
-      {
-        $set: {
-          ...updatedPost,
-        },
-      }
+      { id: newPostData.id },
+      { $set: { ...updateBlog } }
     );
-    res.send("Post updated.");
-  } catch (e) {
-    res.status(500).send("Error updating post.");
+    res.status(200).json({ message: "Blog update succes", success: true });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Error updating your blgo" + error, success: false });
   }
 });
 
-router.delete("/delete-blog/:blogId", async function (req, res, next) {
+router.delete("/delete-blog/:blogId", async (req, res) => {
   try {
     const blogId = Number(req.params.blogId);
-
-    const collection = await blogsDB().collection("posts");
-    await collection.deleteOne({
-      id: blogId,
-    });
-    res.send("Post deleted.");
-  } catch (e) {
-    res.status(500).send("Error deleting post.");
+    const collection = await blogsDB().collection("blog50");
+    const blogToDelete = await collection.deleteOne({ id: blogId });
+    if (blogToDelete.deletedCount === 1) {
+      res.json({ message: "Deleted", success: true }).status(200);
+    } else {
+      res.json({ message: "Not Succesful", success: false }).status(204);
+    }
+  } catch (error) {
+    res.status(500).json({ message: "Error " + error, success: false });
   }
 });
-
-module.exports = router;
