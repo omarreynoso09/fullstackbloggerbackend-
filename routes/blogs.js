@@ -48,7 +48,6 @@ router.post("/blog-submit", async function (req, res, next) {
     const text = req.body.text;
     const author = req.body.author;
     const category = req.body.category;
-    const date = new Date();
     const blogPost = {
       title: title,
       text: text,
