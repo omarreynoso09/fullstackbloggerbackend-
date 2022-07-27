@@ -22,29 +22,36 @@ router.get("/admin/blog-list", async (req, res, next) => {
   }
 });
 
-router.put("/admin/edit-blog", async (req, res) => {
-  try {
-    const updateBlogIsValid = serverBlogIsValid(req.body);
-    if (!updateBlogIsValid) {
-      res
-        .status(400)
-        .jason({ message: "Blog update is not valid.", success: false });
-    }
-    const newPostData = req.body;
-    const date = new Date();
-    const updateBlog = { ...newPostData, lastModified: date };
-    const collection = await blogsDB().collection("blogs50");
+router.put("/edit-blog", async function (req, res, next) {
+  const blogId = req.body.blogId;
+  const title = req.body.title;
+  const text = req.body.text;
+  const author = req.body.author;
 
+  const newBlogPost = {
+    title,
+    text,
+    author,
+    createdAt: new Date(),
+    lastModified: new Date(),
+  };
+
+  try {
+    const collection = await blogsDB().collection("blogs50");
     await collection.updateOne(
-      { id: req.body.id },
-      { $set: { ...updateBlog } }
+      {
+        id: blogId,
+      },
+      {
+        $set: {
+          ...newBlogPost,
+        },
+      }
     );
-    res
-      .status(200)
-      .json({ message: "Blog updated successfully.", message: true });
-    // }
-  } catch (error) {
-    res.status(500).send("Error updating blog." + error);
+    res.json({ success: true });
+  } catch (e) {
+    console.error(e);
+    res.json({ success: false });
   }
 });
 
